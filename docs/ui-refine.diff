@@ -1,0 +1,585 @@
+--- a/Resources/panel/style.css
++++ b/Resources/panel/style.css
+@@ -9,14 +9,29 @@
+   --aqua: #7fd3ff;
+   --navy: #15204d;
+   --ink: #1d2748;
+-  --ink-2: #5b678c;
+-  --ink-3: #8a93b2;
++  --ink-2: #4a5578;
++  --ink-3: #5d6785;
+   --line: rgba(58, 88, 190, .14);
+   --field: rgba(255, 255, 255, .66);
+   --font: -apple-system, "SF Pro SC", "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
+   --mono: "SF Mono", ui-monospace, Menlo, monospace;
++
++  /* ── 卡片视觉参数（单点回滚用，改这几行即可）── */
++  --pw-card-border-color: #BFDBFE;   /* 浅蓝描边 */
++  --pw-card-radius: 28px;            /* 圆钝四角，≥12px */
++  --pw-card-bg-opacity: 0.8;         /* 背景透明度 0–1（UI 以 0–100% 呈现）*/
++  --pw-card-scrim: 0;                /* 低透明度时的文字底板兜底 */
++  --pw-card-width: 100%;             /* 由 Swift 同步为实际窗口宽 */
++  --pw-card-height: 100%;            /* 由 Swift 同步为实际窗口高 */
++  --pw-line-soft: rgba(191, 219, 254, .95);  /* 控件描边：同色系浅蓝，不再用白 */
+ }
+ 
++/* 低透明度兜底：正文已够 4.5:1，这里把辅助文字也压深一档 */
++html.pw-low-alpha {
++  --ink-2: #414c6e;
++  --ink-3: #4a5578;
++}
++
+ html, body {
+   width: 100%; height: 100%;
+   background: transparent;
+@@ -31,18 +46,45 @@
+ 
+ .card {
+   position: relative;
++  isolation: isolate;
+   display: flex;
+   flex-direction: column;
+-  width: 100%; height: 100%;
+-  border-radius: 28px;
++  width: var(--pw-card-width);
++  height: var(--pw-card-height);
++  border-radius: var(--pw-card-radius);
++  border: 1px solid var(--pw-card-border-color);
++  background: transparent;
+   overflow: hidden;
++  box-shadow: 0 12px 34px rgba(28, 46, 110, .12);
++}
++
++/* 背景层：只这一层吃 --pw-card-bg-opacity，0 = 完全透明 */
++.card::before {
++  content: "";
++  position: absolute;
++  inset: -1px;
++  z-index: -2;
++  border-radius: inherit;
+   background:
+     radial-gradient(120% 60% at 12% -8%, rgba(127, 211, 255, .22), transparent 62%),
+     radial-gradient(90% 50% at 96% 108%, rgba(143, 168, 255, .20), transparent 60%),
+-    linear-gradient(180deg, rgba(255, 255, 255, .86), rgba(243, 248, 255, .80));
+-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .75), inset 0 0 0 1px rgba(255, 255, 255, .30);
++    linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(243, 248, 255, .90));
++  opacity: var(--pw-card-bg-opacity);
++  transition: opacity .12s linear;
+ }
+ 
++/* 兜底层：透明度很低时补一层白色底板，保证正文仍满足 WCAG AA 4.5:1 */
++.card::after {
++  content: "";
++  position: absolute;
++  inset: 0;
++  z-index: -1;
++  border-radius: inherit;
++  background: rgba(255, 255, 255, var(--pw-card-scrim));
++  pointer-events: none;
++  transition: background .12s linear;
++}
++
+ /* 顶栏 */
+ .topbar {
+   display: flex; align-items: center; justify-content: space-between;
+@@ -61,7 +103,7 @@
+ .win-tools { display: flex; gap: 6px; flex: none; }
+ .tool {
+   width: 24px; height: 24px; border-radius: 50%;
+-  border: 1px solid rgba(255, 255, 255, .7);
++  border: 1px solid var(--pw-line-soft);
+   background: rgba(255, 255, 255, .5);
+   color: var(--ink-2); font-size: 10.5px; line-height: 1;
+   display: flex; align-items: center; justify-content: center;
+@@ -76,20 +118,20 @@
+   position: relative; display: inline-block; max-width: 100%;
+   padding: 7px 11px; font-size: 11.5px; line-height: 1.45; color: #38406b;
+   background: rgba(255, 255, 255, .78);
+-  border: 1px solid rgba(255, 255, 255, .9);
++  border: 1px solid var(--pw-line-soft);
+   border-radius: 13px; box-shadow: 0 3px 10px rgba(40, 60, 140, .10);
+ }
+ .bubble::before {
+   content: ""; position: absolute; left: -5px; top: 13px; width: 9px; height: 9px;
+   background: rgba(255, 255, 255, .78);
+-  border-left: 1px solid rgba(255, 255, 255, .9);
+-  border-bottom: 1px solid rgba(255, 255, 255, .9);
++  border-left: 1px solid var(--pw-line-soft);
++  border-bottom: 1px solid var(--pw-line-soft);
+   transform: rotate(45deg); border-radius: 1px;
+ }
+ .bubble.pop { animation: pop .34s ease; }
+ 
+ /* 模板 */
+-.chips { display: flex; gap: 5px; padding: 10px 16px 8px; flex: none; overflow-x: auto; scrollbar-width: none; }
++.chips { display: flex; flex-wrap: wrap; gap: 5px; row-gap: 6px; padding: 10px 16px 8px; flex: none; }
+ .chips::-webkit-scrollbar { display: none; }
+ .chip {
+   flex: none; padding: 4px 10px; font-size: 10.5px; font-family: var(--font); color: #47527d; letter-spacing: -.1px;
+@@ -107,7 +149,7 @@
+ #input {
+   width: 100%; height: 78px; resize: none; padding: 11px 12px;
+   font-family: var(--font); font-size: 12.5px; line-height: 1.55; color: var(--ink);
+-  background: var(--field); border: 1.5px solid rgba(255, 255, 255, .85);
++  background: var(--field); border: 1.5px solid var(--pw-line-soft);
+   border-radius: 15px; outline: none;
+   box-shadow: inset 0 1px 3px rgba(40, 60, 140, .06);
+   transition: border-color .18s, box-shadow .18s, background .18s;
+@@ -151,7 +193,7 @@
+ .output {
+   flex: 1; min-height: 0; margin-top: 4px; padding: 11px 12px; overflow-y: auto;
+   background: rgba(255, 255, 255, .54);
+-  border: 1px solid rgba(255, 255, 255, .8); border-radius: 16px;
++  border: 1px solid var(--pw-line-soft); border-radius: 16px;
+   box-shadow: inset 0 1px 3px rgba(40, 60, 140, .05);
+   user-select: text; cursor: text;
+ }
+@@ -164,6 +206,22 @@
+ .empty-title { font-size: 12.5px; font-weight: 650; color: #5d6890; }
+ .empty-sub { font-size: 10.5px; line-height: 1.65; }
+ .ideas { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; width: 100%; padding: 0 4px; }
++
++/* 小尺寸自适应：380×480 附近仍保证文字与按钮完整（只压缩装饰，不删功能） */
++@media (max-height: 620px) {
++  .empty-pet { display: none; }
++  .empty { justify-content: flex-start; padding-top: 6px; gap: 2px; }
++  .ideas { display: none; }   /* 小窗只保留标题与说明，示例卡让位给输出区 */
++  .bubble-row { display: none; }  /* 提示气泡让位给输出区（不是功能入口） */
++  #input { height: 64px; }
++  .idea { padding: 5px 8px; font-size: 10px; }
++}
++@media (max-width: 430px) {
++  .topbar { padding: 0 10px 0 12px; }
++  .titles h1 { font-size: 12.5px; }
++  .chips { padding: 8px 12px 6px; }
++  .input-block, .output-block { padding-left: 12px; padding-right: 12px; }
++}
+ .idea {
+   font-family: var(--font); font-size: 10.5px; line-height: 1.35; color: #54618f; text-align: left;
+   padding: 6px 9px; background: rgba(255, 255, 255, .72); border: 1px solid var(--line);
+@@ -220,6 +278,37 @@
+   padding-bottom: 10px; border-bottom: 1px solid var(--line); flex: none;
+ }
+ .sheet-body { padding-top: 14px; overflow-y: auto; font-size: 11.5px; color: var(--ink-2); flex: 1; }
++
++/* 外观设置：透明度滑块 + 宽高输入 */
++.appearance {
++  margin: 14px 0 2px; padding: 10px 11px 12px;
++  border-radius: 14px;
++  background: rgba(255, 255, 255, .55);
++  border: 1px solid var(--pw-line-soft);
++}
++.appearance-title { font-size: 11px; font-weight: 650; color: var(--ink); margin-bottom: 10px; }
++.appearance .field span b { color: var(--blue-deep); font-weight: 650; }
++.size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
++.size-grid .field { margin-bottom: 0; }
++.size-grid .field input { font-size: 11px; }
++
++.appearance input[type="range"] {
++  -webkit-appearance: none; appearance: none;
++  width: 100%; height: 4px; margin: 6px 0 2px;
++  padding: 0; border: 0; box-shadow: none;
++  border-radius: 999px; outline: none; cursor: pointer;
++  background: linear-gradient(90deg,
++      var(--blue) 0%,
++      var(--blue) var(--fill, 80%),
++      rgba(58, 88, 190, .20) var(--fill, 80%),
++      rgba(58, 88, 190, .20) 100%);
++}
++.appearance input[type="range"]::-webkit-slider-thumb {
++  -webkit-appearance: none; appearance: none;
++  width: 14px; height: 14px; border-radius: 50%;
++  background: #fff; border: 2px solid var(--blue);
++  box-shadow: 0 1px 4px rgba(47, 73, 201, .35);
++}
+ .field { display: block; margin-bottom: 10px; }
+ .field span { display: block; font-size: 10.5px; color: var(--ink-2); margin-bottom: 6px; }
+ .field input {
+--- a/Resources/panel/index.html
++++ b/Resources/panel/index.html
+@@ -94,6 +94,18 @@
+           <button class="btn-soft" id="btnSaveKey">保存</button>
+           <button class="btn-soft" id="btnOpenFolder">打开项目文件夹</button>
+         </div>
++        <div class="appearance">
++          <div class="appearance-title">外观</div>
++          <label class="field">
++            <span>背景透明度 <b id="opacityValue">80%</b></span>
++            <input id="opacityRange" type="range" min="0" max="100" step="1" value="80">
++          </label>
++          <div class="size-grid">
++            <label class="field"><span>宽度 pt</span><input id="sizeW" type="number" min="380" max="1000" step="10" value="470"></label>
++            <label class="field"><span>高度 pt</span><input id="sizeH" type="number" min="480" max="1000" step="10" value="726"></label>
++          </div>
++          <p class="note dim">也可拖卡片右下角调整；范围 380×480 – 1000×1000。</p>
++        </div>
+         <p class="note dim">⌥⇧P 打开/收起面板 · ⌘↵ 生成 · ⌘⇧C 复制 · 拖动面板顶部可移动</p>
+       </div>
+     </div>
+--- a/Resources/panel/app.js
++++ b/Resources/panel/app.js
+@@ -35,7 +35,11 @@
+   btnSaveKey: $('btnSaveKey'),
+   btnOpenFolder: $('btnOpenFolder'),
+   toast: $('toast'),
+-  ideas: $('ideas')
++  ideas: $('ideas'),
++  opacityRange: $('opacityRange'),
++  opacityValue: $('opacityValue'),
++  sizeW: $('sizeW'),
++  sizeH: $('sizeH')
+ };
+ 
+ const state = {
+@@ -43,9 +47,56 @@
+   busy: false,
+   lastPrompt: '',
+   lastUserText: '',
+-  tipIndex: 0
++  tipIndex: 0,
++  appearance: { opacity: 80, width: 470, height: 726 }
+ };
+ 
++const APPEARANCE_LIMITS = { minW: 380, maxW: 1000, minH: 480, maxH: 1000 };
++const clampNum = (value, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(value) || 0)));
++
++// 透明度越低，越需要一层白色底板兜底，保证正文 WCAG AA 4.5:1。
++// 分段线性：黑色桌面下的实测包络线，含安全余量。
++const SCRIM_KNOTS = [[0, 0.62], [0.2, 0.53], [0.4, 0.36], [0.6, 0.14], [0.8, 0]];
++function scrimFor(opacityPct) {
++  const o = opacityPct / 100;
++  if (o >= 0.8) return 0;
++  for (let i = 1; i < SCRIM_KNOTS.length; i++) {
++    const [o1, s1] = SCRIM_KNOTS[i];
++    if (o <= o1) {
++      const [o0, s0] = SCRIM_KNOTS[i - 1];
++      return s0 + (s1 - s0) * ((o - o0) / (o1 - o0));
++    }
++  }
++  return 0;
++}
++
++function applyAppearance(next = {}, notify = false) {
++  const opacity = clampNum(next.opacity ?? state.appearance.opacity, 0, 100);
++  const width = clampNum(next.width ?? state.appearance.width, APPEARANCE_LIMITS.minW, APPEARANCE_LIMITS.maxW);
++  const height = clampNum(next.height ?? state.appearance.height, APPEARANCE_LIMITS.minH, APPEARANCE_LIMITS.maxH);
++  state.appearance = { opacity, width, height };
++
++  document.documentElement.classList.toggle('pw-low-alpha', opacity < 55);
++  const root = document.documentElement.style;
++  root.setProperty('--pw-card-bg-opacity', String(opacity / 100));
++  root.setProperty('--pw-card-scrim', scrimFor(opacity).toFixed(3));
++  root.setProperty('--pw-card-width', `${width - 32}px`);   // .stage 左右各 16px
++  root.setProperty('--pw-card-height', `${height - 32}px`);
++
++  if (els.opacityRange) els.opacityRange.value = String(opacity);
++  if (els.opacityValue) els.opacityValue.textContent = `${opacity}%`;
++  if (els.sizeW) els.sizeW.value = String(width);
++  if (els.sizeH) els.sizeH.value = String(height);
++  if (els.opacityRange) els.opacityRange.style.setProperty('--fill', `${opacity}%`);
++
++  if (notify) {
++    clearTimeout(applyAppearance.timer);
++    applyAppearance.timer = setTimeout(() => {
++      post({ cmd: 'appearance', opacity, width, height });
++    }, 90);
++  }
++}
++
+ // ---------- 渲染 ----------
+ 
+ function escapeHTML(text) {
+@@ -283,6 +334,16 @@
+ 
+ els.btnOpenFolder.addEventListener('click', () => post({ cmd: 'openProject' }));
+ 
++els.opacityRange.addEventListener('input', () => {
++  applyAppearance({ opacity: Number(els.opacityRange.value) }, true);
++});
++
++const commitSize = () => {
++  applyAppearance({ width: els.sizeW.value, height: els.sizeH.value }, true);
++};
++els.sizeW.addEventListener('change', commitSize);
++els.sizeH.addEventListener('change', commitSize);
++
+ els.btnHide.addEventListener('click', () => post({ cmd: 'hide' }));
+ 
+ els.btnPin.addEventListener('click', () => {
+@@ -392,6 +453,11 @@
+ 
+   pinned(payload) {
+     els.btnPin.classList.toggle('on', !!payload.on);
++  },
++
++  // Swift 侧夹紧/拖拽缩放后回写真实值
++  appearance(payload) {
++    applyAppearance(payload || {});
+   }
+ };
+ 
+@@ -407,5 +473,6 @@
+ // ---------- 初始化 ----------
+ 
+ showEmpty();
++applyAppearance();
+ post({ cmd: 'status' });
+ setInterval(() => post({ cmd: 'status' }), 20000);
+--- a/Sources/PanelWindow.swift
++++ b/Sources/PanelWindow.swift
+@@ -1,25 +1,65 @@
+ import AppKit
+ import WebKit
+ 
++/// 卡片尺寸与外观的统一定义（Swift 侧只镜像 CSS 变量，不另造一套数值）。
++enum PanelMetrics {
++    static let minSize = NSSize(width: 380, height: 480)
++    static let maxSize = NSSize(width: 1000, height: 1000)
++    static let defaultSize = NSSize(width: 470, height: 726)
++    static let defaultOpacity: CGFloat = 0.8
++    static let cardInset: CGFloat = 16
++    static let cardRadius: CGFloat = 28
++    static let sizeKey = "panel.size"
++    static let opacityKey = "panel.opacity"
++
++    static func clamp(_ size: NSSize) -> NSSize {
++        NSSize(width: min(maxSize.width, max(minSize.width, size.width.rounded())),
++               height: min(maxSize.height, max(minSize.height, size.height.rounded())))
++    }
++
++    /// 再把尺寸夹到当前屏幕可见区域内，避免窗口跑到屏幕外。
++    static func clampToScreen(_ size: NSSize, screen: NSScreen?) -> NSSize {
++        let visible = (screen ?? NSScreen.main)?.visibleFrame.size ?? NSSize(width: 1440, height: 900)
++        let cap = NSSize(width: min(maxSize.width, visible.width - 24),
++                         height: min(maxSize.height, visible.height - 24))
++        return clamp(NSSize(width: min(size.width, cap.width), height: min(size.height, cap.height)))
++    }
++
++    static func savedSize() -> NSSize {
++        guard let raw = UserDefaults.standard.string(forKey: sizeKey) else { return defaultSize }
++        let parts = raw.split(separator: "x").compactMap { Double($0) }
++        guard parts.count == 2 else { return defaultSize }
++        return clamp(NSSize(width: parts[0], height: parts[1]))
++    }
++
++    static func savedOpacity() -> CGFloat {
++        guard UserDefaults.standard.object(forKey: opacityKey) != nil else { return defaultOpacity }
++        return min(1, max(0, CGFloat(UserDefaults.standard.double(forKey: opacityKey))))
++    }
++}
++
+ /// 提示词工坊面板：磨砂卡片 + WKWebView。
+-final class PanelWindow: NSPanel {
++final class PanelWindow: NSPanel, WKNavigationDelegate {
+     let webView: WKWebView
+ 
+     private let effectView: NSVisualEffectView
+     private let dragHandle: NSView
+-    private let cardInset: CGFloat = 16
++    private let resizeGrip: ResizeGripView
++    private let cardInset = PanelMetrics.cardInset
++    private(set) var cardOpacity = PanelMetrics.savedOpacity()
++    private var resizeAnchor: NSPoint = .zero
+ 
+-    init(size: NSSize = NSSize(width: 470, height: 726)) {
++    init(size: NSSize? = nil) {
++        let startSize = PanelMetrics.clamp(size ?? PanelMetrics.savedSize())
+         let config = WKWebViewConfiguration()
+         config.defaultWebpagePreferences.allowsContentJavaScript = true
+         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
+         webView = WKWebView(frame: .zero, configuration: config)
+         effectView = NSVisualEffectView(frame: .zero)
++        dragHandle = DragView(frame: .zero)
++        resizeGrip = ResizeGripView(frame: .zero)
+ 
+-        let handle = DragView(frame: .zero)
+-        dragHandle = handle
+-
+-        super.init(contentRect: NSRect(origin: .zero, size: size),
++        super.init(contentRect: NSRect(origin: .zero, size: startSize),
+                    styleMask: [.borderless, .nonactivatingPanel],
+                    backing: .buffered,
+                    defer: false)
+@@ -34,36 +74,67 @@
+         isReleasedWhenClosed = false
+         animationBehavior = .utilityWindow
+ 
+-        let root = NSView(frame: NSRect(origin: .zero, size: size))
++        let root = NSView(frame: NSRect(origin: .zero, size: startSize))
+         root.wantsLayer = true
+         root.layer?.backgroundColor = NSColor.clear.cgColor
+         contentView = root
+ 
++        // 毛玻璃只负责「背后模糊」；描边与透明度统一由 CSS 画，避免双层边。
+         effectView.frame = root.bounds.insetBy(dx: cardInset, dy: cardInset)
+         effectView.autoresizingMask = [.width, .height]
+         effectView.material = .popover
+         effectView.blendingMode = .behindWindow
+         effectView.state = .active
+         effectView.wantsLayer = true
+-        effectView.layer?.cornerRadius = 28
++        effectView.layer?.cornerRadius = PanelMetrics.cardRadius
+         effectView.layer?.masksToBounds = true
+-        effectView.layer?.borderWidth = 1
+-        effectView.layer?.borderColor = NSColor.white.withAlphaComponent(0.30).cgColor
++        effectView.layer?.borderWidth = 0
+         root.addSubview(effectView)
+ 
+         webView.frame = root.bounds
+         webView.autoresizingMask = [.width, .height]
+         webView.wantsLayer = true
+         webView.layer?.backgroundColor = NSColor.clear.cgColor
++        webView.navigationDelegate = self
++        // WKWebView 默认会在页面背后画一层不透明白底，露出「白色直角边框」。
++        // 公开 API 的 underPageBackgroundColor 只管滚动越界区域，关不掉这层；
++        // 这里走 KVC 到私有 setter（先 responds 守卫，缺该 setter 的系统上安全降级为白底）。
++        if webView.responds(to: NSSelectorFromString("_setDrawsBackground:")) {
++            webView.setValue(false, forKey: "drawsBackground")
++        } else {
++            NSLog("WKWebView._setDrawsBackground 不可用，卡片外可能露出白底")
++        }
+         webView.underPageBackgroundColor = .clear
+         root.addSubview(webView)
+ 
+-        handle.frame = NSRect(x: cardInset,
+-                              y: size.height - cardInset - 58,
+-                              width: size.width - cardInset * 2 - 116,
+-                              height: 58)
+-        handle.autoresizingMask = [.minYMargin, .width]
+-        root.addSubview(handle)
++        dragHandle.frame = NSRect(x: cardInset,
++                                  y: startSize.height - cardInset - 58,
++                                  width: startSize.width - cardInset * 2 - 116,
++                                  height: 58)
++        dragHandle.autoresizingMask = [.minYMargin, .width]
++        root.addSubview(dragHandle)
++
++        resizeGrip.frame = NSRect(x: startSize.width - cardInset - 20,
++                                  y: cardInset,
++                                  width: 20,
++                                  height: 20)
++        resizeGrip.autoresizingMask = [.minXMargin, .maxYMargin]
++        resizeGrip.onBeginDrag = { [weak self] in
++            guard let self else { return }
++            self.resizeAnchor = NSPoint(x: self.frame.minX, y: self.frame.maxY)
++        }
++        resizeGrip.onDragSize = { [weak self] proposed in
++            guard let self else { return }
++            let clamped = PanelMetrics.clampToScreen(proposed, screen: self.screen)
++            self.setFrame(NSRect(x: self.resizeAnchor.x,
++                                 y: self.resizeAnchor.y - clamped.height,
++                                 width: clamped.width,
++                                 height: clamped.height),
++                          display: true)
++            self.persistAppearance()
++            self.syncAppearanceToWeb()
++        }
++        root.addSubview(resizeGrip)
+     }
+ 
+     override var canBecomeKey: Bool { true }
+@@ -74,6 +145,46 @@
+         let index = dir.appendingPathComponent("panel/index.html")
+         webView.loadFileURL(index, allowingReadAccessTo: dir)
+     }
++
++    // MARK: - 外观
++
++    /// 透明度 0–1、尺寸以 pt 计；越界会被夹紧并回写给网页。
++    func applyAppearance(opacity: CGFloat, size: NSSize) {
++        guard Thread.isMainThread else {
++            DispatchQueue.main.async { [weak self] in self?.applyAppearance(opacity: opacity, size: size) }
++            return
++        }
++        cardOpacity = min(1, max(0, opacity))
++        let clamped = PanelMetrics.clampToScreen(size, screen: screen)
++        if clamped != frame.size {
++            let topLeft = NSPoint(x: frame.minX, y: frame.maxY)
++            setFrame(NSRect(x: topLeft.x, y: topLeft.y - clamped.height,
++                            width: clamped.width, height: clamped.height), display: true)
++        }
++        persistAppearance()
++        syncAppearanceToWeb()
++    }
++
++    private func persistAppearance() {
++        UserDefaults.standard.set("\(Int(frame.width))x\(Int(frame.height))", forKey: PanelMetrics.sizeKey)
++        UserDefaults.standard.set(Double(cardOpacity), forKey: PanelMetrics.opacityKey)
++    }
++
++    private func syncAppearanceToWeb() {
++        let payload: [String: Any] = [
++            "opacity": Int((cardOpacity * 100).rounded()),
++            "width": Int(frame.width),
++            "height": Int(frame.height)
++        ]
++        guard let data = try? JSONSerialization.data(withJSONObject: payload),
++              let json = String(data: data, encoding: .utf8) else { return }
++        webView.evaluateJavaScript("window.__fish && window.__fish.appearance && window.__fish.appearance(\(json));",
++                                   completionHandler: nil)
++    }
++
++    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
++        syncAppearanceToWeb()
++    }
+ }
+ 
+ /// 顶部拖拽条
+@@ -83,3 +194,42 @@
+         window?.performDrag(with: event)
+     }
+ }
++
++/// 右下角缩放手柄：拖动改变窗口宽高，左上角锚定。
++final class ResizeGripView: NSView {
++    var onBeginDrag: (() -> Void)?
++    var onDragSize: ((NSSize) -> Void)?
++    private var startSize = NSSize.zero
++    private var startMouse = NSPoint.zero
++
++    override func resetCursorRects() {
++        addCursorRect(bounds, cursor: .crosshair)
++    }
++
++    override func mouseDown(with event: NSEvent) {
++        startSize = window?.frame.size ?? .zero
++        startMouse = NSEvent.mouseLocation
++        onBeginDrag?()
++    }
++
++    override func mouseDragged(with event: NSEvent) {
++        let point = NSEvent.mouseLocation
++        let proposed = NSSize(width: startSize.width + (point.x - startMouse.x),
++                              height: startSize.height - (point.y - startMouse.y))
++        onDragSize?(proposed)
++    }
++
++    override func draw(_ dirtyRect: NSRect) {
++        let color = NSColor(srgbRed: 0xBF / 255.0, green: 0xDB / 255.0, blue: 0xFE / 255.0, alpha: 0.95)
++        color.setStroke()
++        let path = NSBezierPath()
++        path.lineWidth = 1.6
++        path.lineCapStyle = .round
++        for i in 0..<3 {
++            let offset = CGFloat(4 + i * 5)
++            path.move(to: NSPoint(x: bounds.maxX - offset, y: bounds.minY + 3))
++            path.line(to: NSPoint(x: bounds.maxX - 3, y: bounds.minY + offset))
++        }
++        path.stroke()
++    }
++}
+--- a/Sources/Bridge.swift
++++ b/Sources/Bridge.swift
+@@ -61,6 +61,12 @@
+             ])
+             pet?.bubble(Credentials.apiKey != nil ? "收到，开始干活～" : "还是没有 key 呀")
+ 
++        case "appearance":
++            let opacity = (body["opacity"] as? Double).map { CGFloat($0 / 100) } ?? panel?.cardOpacity ?? 0.8
++            let width = CGFloat((body["width"] as? Double) ?? Double(panel?.frame.width ?? 470))
++            let height = CGFloat((body["height"] as? Double) ?? Double(panel?.frame.height ?? 726))
++            panel?.applyAppearance(opacity: opacity, size: NSSize(width: width, height: height))
++
+         case "openProject":
+             NSWorkspace.shared.open(URL(fileURLWithPath: projectDir))
+ 

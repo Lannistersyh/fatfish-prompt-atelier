@@ -1,0 +1,10 @@
+# 构建产物（可用 ./build.sh 重新生成）
+build/
+*.app/
+
+# macOS / 编辑器
+.DS_Store
+._*
+*.swp
+xcuserdata/
+.idea/

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>大肥鱼提示词工坊</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="stage">
+  <div class="card" id="card">
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="avatar"><img src="../pet/whale-happy.webp" alt="大肥鱼"></div>
+        <div class="titles">
+          <h1>大肥鱼提示词工坊</h1>
+          <p>FATFISH · PROMPT ATELIER</p>
+        </div>
+      </div>
+      <div class="win-tools">
+        <button class="tool" id="btnPin" title="面板置顶">顶</button>
+        <button class="tool" id="btnSettings" title="设置">⚙</button>
+        <button class="tool" id="btnHide" title="收起（Esc）">–</button>
+      </div>
+    </header>
+
+    <div class="bubble-row">
+      <div class="bubble" id="bubble"><span id="bubbleText">把大白话丢给我，我给你写成 Agent 能直接吃的结构提示词～</span></div>
+    </div>
+
+    <div class="chips" id="chips">
+      <button class="chip active" data-preset="general">通用 Agent</button>
+      <button class="chip" data-preset="code">编码任务</button>
+      <button class="chip" data-preset="research">科研写作</button>
+      <button class="chip" data-preset="web">网页设计</button>
+      <button class="chip" data-preset="review">提示词体检</button>
+    </div>
+
+    <div class="input-block">
+      <textarea id="input" rows="3" spellcheck="false"
+        placeholder="例如：帮我给 Claude Code 写个提示词，让它给这个小工具加夜间模式，别动其它功能……"></textarea>
+      <div class="input-foot">
+        <span class="hint">⌘↵ 生成 · ⌘⇧C 复制 · Esc 收起</span>
+        <button class="btn-go" id="btnGo"><span class="label">生成提示词</span></button>
+      </div>
+    </div>
+
+    <section class="output-block">
+      <div class="output-head">
+        <span class="out-title">结构化提示词</span>
+        <span class="out-meta" id="outMeta"></span>
+        <div class="out-actions">
+          <button class="ghost" id="btnHistory" title="历史">历史</button>
+          <button class="ghost" id="btnCopy" title="复制 ⌘⇧C">复制</button>
+          <button class="ghost" id="btnClear" title="清空">清空</button>
+        </div>
+      </div>
+      <div class="output" id="output">
+        <div class="empty" id="emptyState">
+          <img class="empty-pet" src="../pet/fatfish-idle-0.webp" alt="大肥鱼">
+          <p class="empty-title">还没有提示词</p>
+          <p class="empty-sub">说两句大白话，我把它写成结构完整、<br>能直接粘贴的 agent 提示词。</p>
+          <div class="ideas" id="ideas">
+            <button class="idea">给 Claude Code 写个「只改这一处」的重构提示词</button>
+            <button class="idea">把论文讨论段限制在 400 字，别夸大结论</button>
+            <button class="idea">做一个介绍手冲咖啡器具的杂志风静态网站</button>
+          </div>
+        </div>
+      </div>
+      <div class="refine" id="refine">
+        <button class="pill" data-refine="simpler">更简洁</button>
+        <button class="pill" data-refine="stricter">更严谨</button>
+        <button class="pill" data-refine="constraints">补约束</button>
+        <button class="pill" data-refine="structure">重排结构</button>
+      </div>
+    </section>
+
+    <footer class="status">
+      <span class="dot" id="dot"></span>
+      <span id="statusText">检查凭据中…</span>
+      <span class="spacer"></span>
+      <span class="model" id="modelText">deepseek-flash</span>
+    </footer>
+
+    <div class="sheet" id="settingsSheet" hidden>
+      <div class="sheet-head"><span>设置</span><button class="ghost" data-close="settingsSheet">关闭</button></div>
+      <div class="sheet-body">
+        <label class="field">
+          <span>DeepSeek API Key</span>
+          <input id="keyInput" type="password" placeholder="sk-…（留空则复用 ~/.dsh 凭据）" spellcheck="false">
+        </label>
+        <p class="note">留空 = 复用本机 DSH 已登录的 DeepSeek 凭据（只读 <code>~/.dsh/.credentials.yaml</code>，不外发）。</p>
+        <div class="sheet-actions">
+          <button class="btn-soft" id="btnSaveKey">保存</button>
+          <button class="btn-soft" id="btnOpenFolder">打开项目文件夹</button>
+        </div>
+        <div class="appearance">
+          <div class="appearance-title">外观</div>
+          <label class="field">
+            <span>背景透明度 <b id="opacityValue">80%</b></span>
+            <input id="opacityRange" type="range" min="0" max="100" step="1" value="80">
+          </label>
+          <div class="size-grid">
+            <label class="field"><span>宽度 pt</span><input id="sizeW" type="number" min="380" max="1000" step="10" value="470"></label>
+            <label class="field"><span>高度 pt</span><input id="sizeH" type="number" min="480" max="1000" step="10" value="726"></label>
+          </div>
+          <p class="note dim">也可拖卡片右下角调整；范围 380×480 – 1000×1000。</p>
+        </div>
+        <p class="note dim">⌥⇧P 打开/收起面板 · ⌘↵ 生成 · ⌘⇧C 复制 · 拖动面板顶部可移动</p>
+      </div>
+    </div>
+
+    <div class="sheet" id="historySheet" hidden>
+      <div class="sheet-head"><span>最近生成</span><button class="ghost" data-close="historySheet">关闭</button></div>
+      <div class="sheet-body" id="historyList"></div>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+  </div>
+</div>
+<script src="presets.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
