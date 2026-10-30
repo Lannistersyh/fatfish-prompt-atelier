@@ -39,7 +39,7 @@
 
 ## 走路帧（`Resources/pet/fatfish-walk-0..7.webp`）
 
-- 取自 `boyl/deepseek-blue-whale` 的 Codex v2 图集（`spritesheet.webp`，1536×2288，8 列 × 11 行，每格 192×208）第 2 行（row 1）的 8 帧走路循环，原图朝左，向右走时由程序水平镜像。
+- 取自 `boyl/deepseek-blue-whale` 的 Codex v2 图集（`spritesheet.webp`，1536×2288，8 列 × 11 行，每格 192×208）第 2 行（row 1）的 8 帧走路循环，原图朝右，向左走时由程序水平镜像。
   https://github.com/boyl/deepseek-blue-whale
 - 其余待机 / 悬停 / 写作 / 干饭四组帧见 `scripts/extract-pet-frames.py` 的提取映射（idle=row 0、hover=row 4、working=row 7、success=row 8）。
 

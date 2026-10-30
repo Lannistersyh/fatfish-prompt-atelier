@@ -60,6 +60,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         restorePetPosition()
         pet.orderFrontRegardless()
 
+        // 自测钩子：PET_WALK_DIR=left|right 时立刻走两步，方便截图核对朝向
+        if ProcessInfo.processInfo.environment["PET_WALK_DIR"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+                self?.pet.walkNow()
+            }
+        }
+
         if CommandLine.arguments.contains("--demo") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
                 self?.runDemo()

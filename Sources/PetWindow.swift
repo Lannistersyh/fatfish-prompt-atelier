@@ -285,7 +285,7 @@ final class PetWindow: NSPanel {
             velocity = max(-1600, min(1600, vx))
             mode = .sliding
             if abs(velocity) > 160 { setState("walk") }
-            spriteView.mirrored = velocity > 0
+            spriteView.mirrored = velocity < 0
         }
         onMoveEnd?()
     }
@@ -349,6 +349,9 @@ final class PetWindow: NSPanel {
         guard maxX > minX else { return }
         let distance = CGFloat.random(in: 52...150)
         var direction: CGFloat = Bool.random() ? 1 : -1
+        if let forced = ProcessInfo.processInfo.environment["PET_WALK_DIR"] {   // 自测钩子
+            direction = forced == "right" ? 1 : -1
+        }
         if frame.minX <= minX + 16 { direction = 1 }
         if frame.minX >= maxX - 16 { direction = -1 }
         var target = frame.minX + direction * distance
@@ -357,7 +360,8 @@ final class PetWindow: NSPanel {
         guard abs(target - frame.minX) > 24 else { return }
         walkDirection = direction
         walkTargetX = min(max(target, minX), maxX)
-        spriteView.mirrored = direction > 0
+        // 图集原图朝右：只有向左走才水平镜像
+        spriteView.mirrored = direction < 0
         setState("walk")
         mode = .walking
     }
@@ -390,11 +394,11 @@ final class PetWindow: NSPanel {
         if next < minX {
             place(at: NSPoint(x: minX, y: frame.minY))
             velocity = abs(velocity) * 0.42
-            spriteView.mirrored = true
+            spriteView.mirrored = false      // 回弹后向右走
         } else if next > maxX {
             place(at: NSPoint(x: maxX, y: frame.minY))
             velocity = -abs(velocity) * 0.42
-            spriteView.mirrored = false
+            spriteView.mirrored = true       // 回弹后向左走
         } else {
             place(at: NSPoint(x: next, y: frame.minY))
             velocity *= pow(0.04, CGFloat(dt))
