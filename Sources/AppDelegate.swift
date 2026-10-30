@@ -13,6 +13,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - 启动
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        setupMainMenu()
+        DistributedNotificationCenter.default().addObserver(
+            self, selector: #selector(handleExternalShow),
+            name: Notification.Name("ai.local.fatfish.showPanel"), object: nil)
+
         panel = PanelWindow()
         pet = PetWindow()
         bridge = Bridge(panel: panel, pet: pet)
@@ -66,6 +71,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         UserDefaults.standard.set(NSStringFromRect(pet.frame), forKey: "pet.frame")
         panel.webView.configuration.userContentController.removeScriptMessageHandler(forName: "fish")
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
+        DistributedNotificationCenter.default().removeObserver(self)
+    }
+
+    // MARK: - Dock / 菜单栏
+
+    /// 点 Dock 图标（或 Finder 双击已在运行的 App）时，把面板叫出来。
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showPanel()
+        return true
+    }
+
+    /// 右键 Dock 图标的快捷菜单。
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        menu.addItem(withTitle: panel.isVisible ? "收起提示词工坊" : "打开提示词工坊",
+                     action: #selector(togglePanel), keyEquivalent: "")
+        menu.addItem(withTitle: "让大肥鱼说句话", action: #selector(petSpeak), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "退出", action: #selector(quit), keyEquivalent: "")
+        menu.items.forEach { $0.target = self }
+        return menu
+    }
+
+    @objc private func handleExternalShow() {
+        DispatchQueue.main.async { [weak self] in
+            if #available(macOS 14.0, *) {
+                NSApp.activate()
+            } else {
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            self?.showPanel()
+        }
+    }
+
+    /// 常规 App 必须有主菜单：否则 ⌘Q 失灵，输入框里的 ⌘V 也收不到。
+    private func setupMainMenu() {
+        let main = NSMenu()
+
+        let appItem = NSMenuItem()
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "关于 大肥鱼提示词工坊",
+                        action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "打开提示词工坊", action: #selector(togglePanel), keyEquivalent: "")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "隐藏 大肥鱼提示词工坊",
+                        action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: "退出 大肥鱼提示词工坊",
+                        action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appItem.submenu = appMenu
+        main.addItem(appItem)
+
+        let editItem = NSMenuItem()
+        let edit = NSMenu(title: "编辑")
+        edit.addItem(withTitle: "撤销", action: Selector(("undo:")), keyEquivalent: "z")
+        edit.addItem(withTitle: "重做", action: Selector(("redo:")), keyEquivalent: "Z")
+        edit.addItem(.separator())
+        edit.addItem(withTitle: "剪切", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "拷贝", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "粘贴", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "全选", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editItem.submenu = edit
+        main.addItem(editItem)
+
+        NSApp.mainMenu = main
     }
 
     // MARK: - 窗口
