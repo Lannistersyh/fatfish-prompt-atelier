@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_NAME="大肥鱼提示词工坊"
+APP_NAME="大肥鱼"
 APP="$ROOT/build/$APP_NAME.app"
 EXE="FatFishPrompt"
 

@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
     private var screenObserver: NSObjectProtocol?
+    private let petProcess = PetProcess()
 
     // MARK: - 启动
 
@@ -17,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DistributedNotificationCenter.default().addObserver(
             self, selector: #selector(handleExternalShow),
             name: Notification.Name("ai.local.fatfish.showPanel"), object: nil)
+        DistributedNotificationCenter.default().addObserver(
+            self, selector: #selector(handleExternalToggle),
+            name: Notification.Name("ai.local.fatfish.togglePanel"), object: nil)
 
         panel = PanelWindow()
         pet = PetWindow()
@@ -46,7 +50,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if self.panel.isVisible { self.positionPanel() }
         }
 
-        setupStatusItem()
+        // 2合1：菜单栏入口已并进桌宠托盘（Q 版小人），宿主不再单独占一个状态项
+        // setupStatusItem()
 
         hotkey = HotkeyManager(keyCode: UInt32(kVK_ANSI_P),
                                modifiers: UInt32(optionKey | shiftKey)) { [weak self] in
@@ -58,7 +63,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         restorePetPosition()
-        pet.orderFrontRegardless()
+        // 2合1：原生 webp 桌宠只保留对象（Bridge 依赖它），不再显示；
+        // 可见的 1080P 桌宠由 Python 运行时子进程提供。
+        pet.orderOut(nil)
+        petIsHidden = true
+        petProcess.onUnexpectedExit = {
+            NSLog("PetProcess: 桌宠没了，整个 App 退出")
+            NSApp.terminate(nil)
+        }
+        petProcess.start()
+        // 启动即把提示词工坊面板摆出来，省去"找不到入口"的困惑
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            self?.showPanel()
+        }
 
         // 自测钩子：PET_WALK_DIR=left|right 时立刻走两步，方便截图核对朝向
         if ProcessInfo.processInfo.environment["PET_WALK_DIR"] != nil {
@@ -75,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        petProcess.stop()
         UserDefaults.standard.set(NSStringFromRect(pet.frame), forKey: "pet.frame")
         panel.webView.configuration.userContentController.removeScriptMessageHandler(forName: "fish")
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
@@ -94,7 +112,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: panel.isVisible ? "收起提示词工坊" : "打开提示词工坊",
                      action: #selector(togglePanel), keyEquivalent: "")
-        menu.addItem(withTitle: "让大肥鱼说句话", action: #selector(petSpeak), keyEquivalent: "")
         menu.addItem(.separator())
         menu.addItem(withTitle: "退出", action: #selector(quit), keyEquivalent: "")
         menu.items.forEach { $0.target = self }
@@ -108,7 +125,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 NSApp.activate(ignoringOtherApps: true)
             }
+            // 第二次启动转交：只负责把面板带到前台，不改变开关状态
             self?.showPanel()
+        }
+    }
+
+    /// 桌宠点击 / 右键菜单「提示词工坊」：开关面板。
+    @objc private func handleExternalToggle() {
+        DispatchQueue.main.async { [weak self] in
+            if #available(macOS 14.0, *) {
+                NSApp.activate()
+            } else {
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            self?.togglePanel()
         }
     }
 
@@ -118,14 +148,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "关于 大肥鱼提示词工坊",
+        appMenu.addItem(withTitle: "关于 大肥鱼",
                         action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "打开提示词工坊", action: #selector(togglePanel), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "隐藏 大肥鱼提示词工坊",
+        appMenu.addItem(withTitle: "隐藏 大肥鱼",
                         action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
-        appMenu.addItem(withTitle: "退出 大肥鱼提示词工坊",
+        appMenu.addItem(withTitle: "退出 大肥鱼",
                         action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
         main.addItem(appItem)
@@ -286,15 +316,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let image = NSImage(systemSymbolName: "fish.fill", accessibilityDescription: "大肥鱼")
             image?.isTemplate = true
             button.image = image
-            button.toolTip = "大肥鱼提示词工坊（⌥⇧P 打开/收起）"
+            button.toolTip = "大肥鱼（⌥⇧P 打开/收起）"
         }
 
         let menu = NSMenu()
         menu.addItem(withTitle: "打开 / 收起提示词工坊　⌥⇧P", action: #selector(togglePanel), keyEquivalent: "")
         let pin = NSMenuItem(title: "面板取消置顶", action: #selector(togglePin), keyEquivalent: "")
         menu.addItem(pin)
-        menu.addItem(withTitle: "隐藏桌宠", action: #selector(togglePet), keyEquivalent: "")
-        menu.addItem(withTitle: "查 DeepSeek 余额", action: #selector(checkBalance), keyEquivalent: "")
         menu.addItem(.separator())
         menu.addItem(withTitle: "打开项目文件夹", action: #selector(openProjectFolder), keyEquivalent: "")
         menu.addItem(.separator())
