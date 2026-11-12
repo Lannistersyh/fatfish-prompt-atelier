@@ -46,3 +46,10 @@
 ## 参考项目（源码留档）
 
 全部源码已下载到 `../大肥鱼皮肤源码/`，索引见该目录 `INDEX.md`。
+
+## 1080P 桌宠素材（`assets/1080p/`，2026-11）
+
+- 由 dsh-pet 运行时 `assets/characters/shenshen/**` 的 640×360 VP9-alpha webm 经 Real-ESRGAN 3× 超分、缩放/裁边、alpha 去雾得到，共 106 段 1920×1080 动画。
+- 角色 OC「溟月」（桌宠名「深深」）原画作者：**上善无形**；素材社区整理自 [PC2005-cloud/dsh-pet](https://github.com/PC2005-cloud/dsh-pet)。
+- 按上游 `THIRD_PARTY_NOTICES.md` 的 **CC BY-NC-SA 类条款**收录：仅限个人非商业使用，须署名并相同方式共享。
+- 完整声明、允许/禁止事项与下架方式见 [assets/1080p/NOTICE.md](assets/1080p/NOTICE.md)。
